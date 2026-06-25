@@ -22,9 +22,9 @@ START_YEAR = 2021
 START_MONTH = 1
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT_DIR = ROOT / "outputs" / "dashboard"
+OUT_DIR = ROOT if (ROOT / "index.html").exists() else ROOT / "outputs" / "dashboard"
 DATA_DIR = OUT_DIR / "data"
-RAW_DIR = ROOT / "work" / "moc_raw"
+RAW_DIR = OUT_DIR / "work" / "moc_raw" if (ROOT / "index.html").exists() else ROOT / "work" / "moc_raw"
 
 THAI_MONTHS = {
     1: "ม.ค.",
