@@ -20,6 +20,7 @@ HS_CODE = "08119000002"
 PREFERRED_HS_VERSION = "2022"
 START_YEAR = 2021
 START_MONTH = 1
+CACHE_REFRESH_TAIL = 3
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = ROOT if (ROOT / "index.html").exists() else ROOT / "outputs" / "dashboard"
@@ -255,11 +256,21 @@ def main() -> None:
     missing_continent_ids: set[str] = set()
 
     periods = period_range(latest_year, latest_month)
+    fresh_start_index = max(1, len(periods) - CACHE_REFRESH_TAIL + 1)
     for index, (year, month) in enumerate(periods, start=1):
         payload = make_payload(year, month, year_name_by_id.get(str(year), year + 543), hs_name, hs_version)
-        response_data = request_json(session, "POST", RESULT_ENDPOINT, json_payload=payload)
         raw_path = RAW_DIR / f"report_hs{HS_CODE}_{year}_{month:02d}.json"
-        raw_path.write_text(json.dumps(response_data, ensure_ascii=False, indent=2), encoding="utf-8")
+        source_label = "fetched"
+        if raw_path.exists() and index < fresh_start_index:
+            try:
+                response_data = json.loads(raw_path.read_text(encoding="utf-8"))
+                source_label = "cached"
+            except json.JSONDecodeError:
+                response_data = request_json(session, "POST", RESULT_ENDPOINT, json_payload=payload)
+                raw_path.write_text(json.dumps(response_data, ensure_ascii=False, indent=2), encoding="utf-8")
+        else:
+            response_data = request_json(session, "POST", RESULT_ENDPOINT, json_payload=payload)
+            raw_path.write_text(json.dumps(response_data, ensure_ascii=False, indent=2), encoding="utf-8")
 
         records = response_data.get("records", [])
         if not records:
@@ -333,8 +344,9 @@ def main() -> None:
                 "quantityDiff": total_quantity - country_quantity_sum,
             }
         )
-        print(f"[{index:02d}/{len(periods)}] fetched {period_key}: {country_count} country rows")
-        time.sleep(0.05)
+        print(f"[{index:02d}/{len(periods)}] {source_label} {period_key}: {country_count} country rows")
+        if source_label == "fetched":
+            time.sleep(0.4)
 
     continent_monthly: dict[tuple[str, str], dict[str, Any]] = {}
     for row in monthly_rows:
