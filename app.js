@@ -513,7 +513,7 @@
     const width = Math.max(360, Math.min(920, Math.floor(container.getBoundingClientRect().width || container.clientWidth || 920)));
     const height = 360;
     const legendRows = Math.ceil(Math.min(series.length, 10) / 2);
-    const pad = { top: 34 + legendRows * 16, right: 22, bottom: 64, left: 74 };
+    const pad = { top: 34 + legendRows * 16, right: 34, bottom: 64, left: 74 };
     const xMin = Math.min(...series.flatMap((one) => one.points.map((point) => point.periodSort)));
     const xMax = Math.max(...series.flatMap((one) => one.points.map((point) => point.periodSort)));
     let yMin = Math.min(...values);
